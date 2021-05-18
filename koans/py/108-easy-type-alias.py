@@ -1,16 +1,16 @@
 """
 Koan to learn using type-aliases to improve readability
 """
-from typing import Any
+from typing import Any, List
 
 # Annotate the two variables `Line` and `Words` as type aliases. Type Aliases increase the code understanding better.
 # Documentation: https://docs.python.org/3/library/typing.html#type-aliases
-Line = Any
-Word = Any
-Words = Any
+Line = str
+Word = str
+Words = Line
 
 
-def get_words():
+def get_words() -> List[str]:
     words = []
     for word in line.split():
         word = word.replace(",", "").replace(".", "").lower()

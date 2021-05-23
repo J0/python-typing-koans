@@ -9,13 +9,13 @@ from abc import ABC, abstractmethod
 class MazeGame(ABC):
     def __init__(self) -> None:
         # Annotate rooms
-        self.rooms = []
+        self.rooms: list[Room] = []
         self._prepare_rooms()
 
     def _prepare_rooms(self) -> None:
         # Annotate room1 and room2
-        room1 = self.make_room()
-        room2 = self.make_room()
+        room1: Room = self.make_room()
+        room2: Room = self.make_room()
 
         room1.connect(room2)
         self.rooms.append(room1)
@@ -32,23 +32,23 @@ class MazeGame(ABC):
 
 class MagicMazeGame(MazeGame):
     # Annotate the return type
-    def make_room(self):
+    def make_room(self) -> MagicRoom:
         return MagicRoom()
 
 
 class OrdinaryMazeGame(MazeGame):
     # Annotate the return type
-    def make_room(self):
+    def make_room(self) -> Room:
         return OrdinaryRoom()
 
 
 class Room(ABC):
     def __init__(self) -> None:
         # Annotate the variable
-        self.connected_rooms = []
+        self.connected_rooms: list[Room] = []
 
     # Annotate the room argument
-    def connect(self, room) -> None:
+    def connect(self, room: Room) -> None:
         self.connected_rooms.append(room)
 
 

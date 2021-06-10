@@ -10,11 +10,10 @@ import errno
 import logging
 import os
 import socket
-import stat
 import sys
 import time
 from dataclasses import dataclass
-from typing import Optional, Type, TypeVar, Union
+from typing import  Union, Optional, Type, List
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class BaseSocket:
     FAMILY = socket.AF_INET
 
     # Annotate log
-    def __init__(self, address: Address, conf: Config, log):
+    def __init__(self, address: Address, conf: Config, log:logging.Logger) -> None:
         self.log = log
         self.conf = conf
 
@@ -55,9 +54,9 @@ class BaseSocket:
         bound = False
 
         # annotate socket
-        self.sock = sock
+        self.sock: Optional[socket.socket] = sock
 
-    def bind(self, sock) -> None:
+    def bind(self, sock: socket.socket) -> None:
         sock.bind(self.cfg_addr)
 
     def close(self) -> None:
@@ -72,7 +71,7 @@ class BaseSocket:
         self.sock = None
 
     # Annotate
-    def set_options(self, sock, bound: bool = False):
+    def set_options(self, sock: socket.socket, bound: bool = False)-> socket.socket:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if self.conf.reuse_port and hasattr(socket, "SO_REUSEPORT"):  # pragma: no cover
             try:
@@ -96,7 +95,7 @@ class TCPSocket(BaseSocket):
 
     FAMILY = socket.AF_INET
 
-    def set_options(self, sock, bound: bool = False):
+    def set_options(self, sock: socket.socket, bound: bool = False) -> socket.socket:
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         return super().set_options(sock, bound=bound)
 
@@ -109,21 +108,21 @@ class TCP6Socket(TCPSocket):
 class UnixSocket(BaseSocket):
     FAMILY = socket.AF_UNIX
 
-    def __init__(self, addr: str, conf: Config, log):
+    def __init__(self, addr: str, conf: Config, log: logging.Logger):
         try:
             st = os.stat(addr)
         except OSError as e:
             log.error("Not unix socket", exc_info=True)
         super().__init__(addr, conf, log)
 
-    def bind(self, sock) -> None:
+    def bind(self, sock: socket.socket) -> None:
         old_umask = os.umask(self.conf.umask)
         sock.bind(self.cfg_addr)
         # Chown address
 
 
 # annotate return type without using Union
-def _sock_type(addr: Address):
+def _sock_type(addr: Address) -> Type[BaseSocket]:
     if isinstance(addr, tuple):
         if is_ipv6(addr[0]):
             return TCP6Socket
@@ -135,10 +134,9 @@ def _sock_type(addr: Address):
         raise TypeError("Unable to create socket from: %r" % addr)
 
 
-def create_sockets(conf: Config, log: logging.Logger):
+def create_sockets(conf: Config, log: logging.Logger) -> list[BaseSocket]:
     """
     Create a new socket for the configured addresses.
-
     If a configured address is a tuple then a TCP socket is created.
     If it is a string, a Unix socket is created. Otherwise, a TypeError is
     raised.

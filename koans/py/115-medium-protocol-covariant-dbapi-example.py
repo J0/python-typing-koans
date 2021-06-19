@@ -1,6 +1,7 @@
 """
 Koan to understanding working of Protocol and class inheritance return types
 """
+from __future__ import annotations
 from typing import Generic, Optional, Protocol, Sequence, Tuple, TypeVar, Union
 
 # PEP249 defines how dbapi structure - https://www.python.org/dev/peps/pep-0249
@@ -11,10 +12,31 @@ from typing import Generic, Optional, Protocol, Sequence, Tuple, TypeVar, Union
 Value = Union[str, int, float]
 Row = Tuple[Value]
 
-# Use covariant to represent Cursor
+# Use covariant to represent CursorT
+TCursor = TypeVar('TCursor', bound="Cursor", covariant=True)
 
-# Use Protocol to represent PostgresConnection and MySQLConnection
 
+# Use Protocol to represent PostgresConnection and MySQLConnect
+class Connection(Protocol):
+    # Annotate to return MySQLCursor
+    def cursor(self) -> Cursor:
+        ...
+
+    # Annotate to return a cursor
+    def execute(self, sql: str, *params: Sequence[Value])-> Cursor:
+        ...
+
+    def commit(self) -> None:
+        ...
+
+    def rollback(self) -> None:
+        ...
+
+    def close(self) -> None:
+        ...
+
+class Cursor:
+    pass
 
 class PostgresConnection:
     def __init__(
@@ -34,11 +56,11 @@ class PostgresConnection:
         self.timeout = timeout
 
     # Annotate to return PostgresCursor
-    def cursor(self):
+    def cursor(self) -> PostgresCursor:
         return PostgresCursor()
 
     # Annotate to return a Postgrescursor
-    def execute(self, sql: str, *params: Sequence[Value]):
+    def execute(self, sql: str, *params: Sequence[Value])-> PostgresCursor:
         return PostgresCursor()
 
     def commit(self) -> None:
@@ -51,7 +73,7 @@ class PostgresConnection:
         ...
 
 
-class PostgresCursor:
+class PostgresCursor(Cursor):
     def close(self) -> None:
         ...
 
@@ -89,11 +111,11 @@ class MySQLConnection:
         self.timeout = timeout
 
     # Annotate to return MySQLCursor
-    def cursor(self):
+    def cursor(self) ->MySQLCursor:
         ...
 
     # Annotate to return a cursor
-    def execute(self, sql: str, *params: Sequence[Value]):
+    def execute(self, sql: str, *params: Sequence[Value])-> MySQLCursor:
         ...
 
     def commit(self) -> None:
@@ -106,7 +128,7 @@ class MySQLConnection:
         ...
 
 
-class MySQLCursor:
+class MySQLCursor(Cursor):
     def close(self) -> None:
         ...
 
@@ -135,7 +157,7 @@ def connect(
     ansi: bool = False,
     readonly: bool = False,
     timeout: int = 10,
-):
+)-> Connection:
     if connstring.startswith("mysql"):
         return MySQLConnection(
             connstring,
